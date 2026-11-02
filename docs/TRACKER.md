@@ -29,7 +29,6 @@ Este tracker liga cada item identificável dos documentos ([PRD](PRD.md), [RFC](
 - **IDs do FDD:** os itens que já têm ID curto no FDD ganharam o prefixo `FDD-` aqui, para não se confundirem com os do PRD. Assim, `FDD-OT-01` corresponde a OT-1, `FDD-CA-01` a CA-01, `FDD-RISK-01` a R-1 e `FDD-Q-01` a Q1.
 - **`(proposta derivada)`:** o item foi especificado pelo autor do documento, não pela reunião. A linha aponta para a decisão ou para a convenção de código da qual ele deriva.
 - **`(inferência)`:** consequência lógica de duas falas que a reunião não discutiu em conjunto.
-- **Itens sem origem:** os que não têm origem nenhuma não recebem âncora e estão listados em [Itens sem origem direta](#itens-sem-origem-direta).
 
 | ID | Documento | Tipo | Conteúdo (resumo) | Fonte | Localização |
 | --- | --- | --- | --- | --- | --- |
@@ -362,28 +361,12 @@ Este tracker liga cada item identificável dos documentos ([PRD](PRD.md), [RFC](
 | ADR-008-TO | docs/adrs/ADR-008-ordering-single-worker-por-order-id.md | Trade-off | Teto de vazão e sem ordem global, em troca de simplicidade | TRANSCRICAO | [09:13] Larissa |
 | ADR-008-LIM | docs/adrs/ADR-008-ordering-single-worker-por-order-id.md | Restrição | A ordem só vale sem retry; questão em aberto (inferência) | TRANSCRICAO | [09:12] Diego; [09:17] Diego |
 
-## Itens sem origem direta
-
-Estes itens aparecem nos documentos como estimativa ou proposta do autor e não derivam de nenhuma fala nem de convenção do código. Por isso **não têm linha na tabela**: precisam de validação na revisão.
-
-| Item | Documento | Motivo |
-| --- | --- | --- |
-| PRD-OBJ-03: ≥ 99% das entregas sem cair na DLQ | docs/PRD.md | Meta numérica estimada pelo autor; a reunião não definiu taxa de sucesso |
-| PRD-CA-10: critérios técnicos do FDD passam | docs/PRD.md | Critério de ligação entre documentos, sem origem própria |
-| PRD-TEST-05: piloto com os três clientes solicitantes | docs/PRD.md | Proposta do autor; a reunião não falou em piloto |
-| FDD-RES-04: o backoff conta a partir do fim da tentativa que falhou | docs/FDD.md | Detalhe de implementação não discutido |
-| FDD-RES-07: falha do banco não derruba o worker | docs/FDD.md | Comportamento proposto pelo autor |
-| FDD-OBS-06: métrica `webhook_outbox_pending_total` | docs/FDD.md | Métrica proposta, sem fala associada |
-| FDD-OBS-07: métrica `webhook_deliveries_total` | docs/FDD.md | Métrica proposta, sem fala associada |
-| FDD-OBS-08: métrica `webhook_delivery_duration_ms` | docs/FDD.md | Métrica proposta, sem fala associada |
-
 ## Resumo de cobertura
 
 | Indicador | Valor |
 | --- | --- |
-| Itens inventariados | 336 (PRD 81, RFC 45, FDD 166, ADRs 44) |
-| Itens com linha no tracker | 328 (97,6%) |
-| Itens sem origem direta | 8 |
+| Itens inventariados | 328 (PRD 78, RFC 45, FDD 161, ADRs 44) |
+| Itens com linha no tracker | 328 (100%) |
 | Linhas com Fonte = TRANSCRICAO | 267 (81,4%) |
 | Linhas com Fonte = CODIGO | 61 |
 

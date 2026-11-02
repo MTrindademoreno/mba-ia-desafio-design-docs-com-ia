@@ -51,11 +51,10 @@ O pedido veio formalmente de três clientes: Atlas Comercial, MaxDistribuição 
 | --- | --- | --- | --- | --- |
 | PRD-OBJ-01 | Notificar em "tempo real" | Tempo entre a mudança de status e a primeira tentativa de entrega | **< 10 s em 95% dos eventos**. O teto é de 2s no pior caso, mais o tempo de envio | Meta de 10s: [09:02] Marcos; percentil p95: (estimativa do autor) |
 | PRD-OBJ-02 | Entregar no prazo comercial | Data de liberação em produção | **Até o fim de novembro, em 3 sprints**, com a revisão de segurança incluída | [09:45] Marcos, [09:46] Larissa |
-| PRD-OBJ-03 | Entregas confiáveis | % de eventos entregues com sucesso, considerando as retentativas, sem cair na fila de falhas | **≥ 99%** | (estimativa do autor: as falhas definitivas devem ser exceção, restrita a clientes fora do ar por mais de ~15h) |
 | PRD-OBJ-04 | Reduzir o polling dos clientes que pediram a feature | Volume de chamadas de listagem de pedidos feitas por esses clientes | **Queda de ≥ 50% em 60 dias** após o início do uso | (estimativa do autor: a dor citada é o polling ([09:00] Marcos); a meta precisa ser validada pelo PM) |
 | PRD-OBJ-05 | Adoção pelos solicitantes | Clientes solicitantes com ao menos um webhook ativo | **3 de 3 em até 30 dias** após o lançamento | (estimativa do autor) |
 
-As métricas técnicas que alimentam a PRD-OBJ-01 e a PRD-OBJ-03 estão no [FDD §10](FDD.md#10-observabilidade).
+A métrica técnica que alimenta a PRD-OBJ-01 está no [FDD §10](FDD.md#10-observabilidade).
 
 ## 5. Escopo
 
@@ -166,7 +165,6 @@ Na tabela, a probabilidade e o impacto são **estimativas do autor**, porque a r
 - [ ] **PRD-CA-07:** depois de pedir uma secret nova, o cliente continua validando notificações com a antiga por 24 h (PRD-FR-13).
 - [ ] **PRD-CA-08:** o cliente vê no histórico cada tentativa de entrega, com resultado, conteúdo, resposta e tempo (PRD-FR-14).
 - [ ] **PRD-CA-09:** uma falha ao registrar a notificação impede a mudança de status (PRD-NFR-02).
-- [ ] **PRD-CA-10:** os critérios técnicos do [FDD §13](FDD.md#13-critérios-de-aceite-técnicos) passam.
 
 ## 12. Estratégia de testes e validação
 
@@ -176,12 +174,8 @@ Na tabela, a probabilidade e o impacto são **estimativas do autor**, porque a r
 - Revisão do desenho por Bruno e Diego antes de começar a codar ([09:50] Larissa).
 - Revisão de segurança da Sofia, com pelo menos 2 dias úteis, como etapa obrigatória antes do deploy ([09:46] Sofia, [09:47] Larissa).
 
-**No lançamento (proposta):**
-- Piloto com os três clientes solicitantes, que cadastram endpoints de homologação.
-- Validação dos cenários 1, 2 e 4 da seção 3 junto com eles.
-
 **Depois do lançamento:**
-- Acompanhar as métricas do [FDD §10](FDD.md#10-observabilidade): idade da notificação pendente mais antiga (PRD-OBJ-01), taxa de sucesso e volume da fila de falhas (PRD-OBJ-03), e volume de envios por cliente, que serve de base para decidir o rate limiting.
+- Acompanhar as métricas do [FDD §10](FDD.md#10-observabilidade): idade da notificação pendente mais antiga (PRD-OBJ-01), volume da fila de falhas e volume de envios por cliente, que serve de base para decidir o rate limiting ([09:39] Diego).
 - Medir o polling dos clientes para a PRD-OBJ-04 **(proposta)**.
 
 ## 13. Questões em aberto

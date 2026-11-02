@@ -149,7 +149,7 @@ Foram **6 iterações principais**, além dos ajustes menores em cada documento:
    - a validação de HTTPS ficava no service, mas a Sofia disse que era "só uma validação no schema Zod".
 
    Os dois foram alinhados com a reunião, aceitando que a URL sem HTTPS retorne `VALIDATION_ERROR`, que é o código produzido pelo middleware existente.
-6. **Validação do tracker com script.** O script de verificação foi testado com um tracker cheio de erros de propósito (âncora inexistente, ID duplicado, caminho falso). O teste revelou dois bugs do próprio script, que foram corrigidos antes de usá-lo no tracker real. A versão final passou sem erros: 97,6% de cobertura, 81,4% das linhas com fonte `TRANSCRICAO` e 61 com fonte `CODIGO`.
+6. **Validação do tracker com script.** O script de verificação foi testado com um tracker cheio de erros de propósito (âncora inexistente, ID duplicado, caminho falso). O teste revelou dois bugs do próprio script, que foram corrigidos antes de usá-lo no tracker real. A primeira versão listava 8 itens sem origem na reunião nem no código (uma meta de 99% de sucesso, um piloto com clientes, três métricas e dois comportamentos de resiliência). Esses itens foram removidos dos documentos, e não apenas sinalizados. A versão final passou sem erros: 100% de cobertura, 81,4% das linhas com fonte `TRANSCRICAO` e 61 com fonte `CODIGO`.
 
 Menores, mas recorrentes: metas e probabilidades de risco que a reunião não forneceu entraram marcadas como `(estimativa do autor)` em vez de omitidas ou disfarçadas, e uma divergência da própria transcrição sobre o prazo ("fim do trimestre" em [09:00] e "fim de novembro" em [09:45]) foi registrada como questão em aberto.
 

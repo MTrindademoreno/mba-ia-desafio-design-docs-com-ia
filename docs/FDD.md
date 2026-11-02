@@ -699,7 +699,6 @@ Estes códigos não são respostas HTTP. Ficam em `webhook_outbox.lastError`, `w
 | Intervalo do polling | 2s | [ADR-002] |
 | Timeout por chamada | 10s | [ADR-003] |
 | Retentativas | 5, com backoff de 1m/5m/30m/2h/12h | [ADR-003] |
-| Ponto de partida do backoff | `nextAttemptAt` é calculado a partir do fim da tentativa que falhou | (proposta) |
 
 Os valores ficam como constantes no módulo, e as variáveis de ambiente de §12 permitem ajustar polling, lote e timeout. Os padrões são iguais aos dos ADRs.
 
@@ -709,7 +708,6 @@ Os valores ficam como constantes no módulo, e as variáveis de ambiente de §12
 | --- | --- |
 | Worker cai no meio de um envio | A linha fica em `PROCESSING` e é recuperada depois de 5 minutos (§6.2, passo 1). Pode haver reenvio, coberto pelo `X-Event-Id` |
 | Worker fora do ar | Os eventos se acumulam em `PENDING` e nada se perde, porque estão na outbox ([ADR-001]). O alerta vem da métrica de idade do evento pendente mais antigo (§10) |
-| Banco fora do ar | A API já falha na mudança de status. O worker registra `worker_poll_failed` e tenta no próximo ciclo, sem derrubar o processo |
 | API reinicia | O worker não é afetado, porque é outro processo ([09:11] Diego) |
 | Envio falha | A mudança de status não é afetada ([09:04] Bruno) |
 
@@ -744,7 +742,6 @@ Os logs usam o logger Pino existente (`src/shared/logger/index.ts`), com mensage
 | `webhook_moved_to_dead_letter` | error | `eventId`, `webhookId`, `orderId`, `reason` | worker |
 | `webhook_dead_letter_replayed` | info (auditoria) | `userId`, `deadLetterId`, `eventId`, `webhookId` | API ([09:36] Sofia) |
 | `webhook_secret_rotated` | info | `webhookId`, `userId`, `previousSecretExpiresAt` | API |
-| `worker_poll_failed` | error | `err` | worker |
 
 **O que nunca entra em log:** `secret`, `previousSecret`, o valor de `X-Signature` e o corpo da resposta do cliente. Para isso, `*.secret`, `*.previousSecret` e `*.signature` entram nos `redactPaths` do logger **(proposta: é a única mudança no logger)**.
 
@@ -754,14 +751,11 @@ O projeto **não tem** infraestrutura de métricas: não há `prom-client` nem e
 
 | Métrica | Tipo | Uso |
 | --- | --- | --- |
-| `webhook_outbox_pending_total` | gauge | Tamanho da fila |
 | `webhook_outbox_oldest_pending_age_seconds` | gauge | Alerta de worker parado ou atrasado: se passar de 10s, viola o OT-1 |
-| `webhook_deliveries_total{result}` | counter | Taxa de sucesso ou falha |
-| `webhook_delivery_duration_ms` | histograma | Latência dos clientes |
 | `webhook_dead_letter_total` | counter | Eventos perdidos para a DLQ |
 | `webhook_events_per_customer_per_minute` | gauge | Dado para decidir o rate limiting (Q1) |
 
-Até a decisão de Q5, os dois gauges da outbox podem ser obtidos com consultas de `count` e `min(createdAt)` sobre `webhook_outbox`, e os contadores, a partir dos logs.
+Até a decisão de Q5, a idade do pendente mais antigo pode ser obtida com uma consulta de `min(createdAt)` sobre `webhook_outbox`, e os contadores, a partir dos logs.
 
 ### Tracing
 
