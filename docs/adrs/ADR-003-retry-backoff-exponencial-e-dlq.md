@@ -48,6 +48,7 @@ O endpoint do cliente pode estar fora do ar quando o worker tenta entregar o eve
 - Um cliente fora do ar por mais de cerca de 15 horas perde os eventos desse período até alguém reprocessá-los manualmente, o que foi aceito ([09:17] Marcos).
 - Não existe retry automático depois da DLQ; o reprocessamento depende de ação humana ([09:18] Diego).
 - Mais uma tabela para modelar e manter (catálogo D-05).
+- Um evento em backoff pode ser ultrapassado por um evento posterior do mesmo pedido, o que afeta a ordem por pedido do [ADR-008](ADR-008-ordering-single-worker-por-order-id.md). A reunião não tratou dessa interação; ela está registrada como limitação e questão em aberto no ADR-008.
 
 **Trade-off:** aceitamos que falhas longas exijam reprocessamento manual em troca de uma política de entrega previsível, que não acumula eventos eternos na outbox.
 
@@ -59,4 +60,4 @@ O endpoint do cliente pode estar fora do ar quando o worker tenta entregar o eve
 
 - Origem na reunião: [09:15] Diego, [09:15] Bruno, [09:16] Bruno, [09:16] Diego, [09:16] Larissa, [09:17] Diego, [09:17] Marcos, [09:17] Larissa, [09:18] Diego, [09:18] Bruno, [09:42] Sofia, [09:42] Diego
 - Catálogo: D-04, D-05, S-04
-- Relacionados: [ADR-001](ADR-001-outbox-no-mysql.md), [ADR-002](ADR-002-worker-separado-polling-2s.md), [ADR-005](ADR-005-at-least-once-x-event-id.md), [ADR-006](ADR-006-reuso-padroes-do-projeto.md)
+- Relacionados: [ADR-001](ADR-001-outbox-no-mysql.md), [ADR-002](ADR-002-worker-separado-polling-2s.md), [ADR-005](ADR-005-at-least-once-x-event-id.md), [ADR-006](ADR-006-reuso-padroes-do-projeto.md), [ADR-008](ADR-008-ordering-single-worker-por-order-id.md)

@@ -46,7 +46,7 @@ flowchart LR
 - **Outbox transacional.** Toda mudança de status que algum endpoint do cliente quer ouvir grava um evento numa tabela de outbox, dentro da transação de `changeStatus`. Se a mudança de status sofre rollback, o evento some junto. O evento guarda um snapshot do payload tirado no momento da gravação ([ADR-001](adrs/ADR-001-outbox-no-mysql.md)).
 - **Integração com o código atual.** A gravação é feita por uma função pura que recebe o client da transação. Se ela falhar, a mudança de status é desfeita. O filtro por status que cada endpoint quer ouvir é aplicado nesse momento ([ADR-007](adrs/ADR-007-integracao-changestatus-transacional.md)).
 - **Worker de entrega.** Roda num processo próprio, com seu próprio client do banco, e busca os eventos pendentes a cada 2 segundos. A latência no pior caso é de 2s, dentro do limite de 10s ([ADR-002](adrs/ADR-002-worker-separado-polling-2s.md)).
-- **Ordem.** Um único worker processa os eventos na ordem de criação, o que garante a ordem por pedido, mas não entre pedidos diferentes ([ADR-008](adrs/ADR-008-ordering-single-worker-por-order-id.md)).
+- **Ordem.** Um único worker processa os eventos na ordem de criação, o que garante a ordem por pedido, mas não entre pedidos diferentes ([ADR-008](adrs/ADR-008-ordering-single-worker-por-order-id.md)). A garantia vale no caminho sem falhas. Com retry, um evento posterior do mesmo pedido pode passar à frente (ver Q5).
 - **Resiliência.** Uma chamada que não responde em 10s conta como falha ([09:42] Diego). São 5 tentativas, com backoff de 1m, 5m, 30m, 2h e 12h. Esgotadas as tentativas, o evento vai para uma DLQ em tabela separada, com replay manual restrito a ADMIN ([ADR-003](adrs/ADR-003-retry-backoff-exponencial-e-dlq.md)).
 - **Autenticidade.** O corpo de cada envio é assinado com HMAC-SHA256, usando uma secret única por endpoint, gerada pela plataforma. Na rotação, a secret antiga continua válida por mais 24h ([ADR-004](adrs/ADR-004-hmac-sha256-secret-por-endpoint.md)).
 - **Semântica de entrega.** A entrega é at-least-once: cada evento leva um UUID em `X-Event-Id`, e o cliente deduplica por ele ([ADR-005](adrs/ADR-005-at-least-once-x-event-id.md)).
@@ -109,6 +109,7 @@ Contratos (endpoints, payload, headers), modelo de dados e matriz de erros estã
 | Q2 | Como escalar para vários workers sem perder a ordem por pedido: particionar por pedido ou usar lock pessimista? | Adiado como "problema do futuro"; nenhuma das duas opções foi escolhida. | [09:13] Bruno, [09:13] Diego |
 | Q3 | Qual a política de arquivamento dos eventos já entregues? | Foi citado "30 dias ou assim" como ordem de grandeza, mas o tema ficou fora do escopo da feature, sem dono nem prazo. | [09:08] Diego |
 | Q4 | Quando e como restringir a autorização do CRUD de configuração, que hoje aceita qualquer usuário autenticado? | Aceito assim por enquanto, com a intenção declarada de restringir mais tarde. | [09:36] Marcos, [09:37] Sofia |
+| Q5 | Quando um evento entra em retry, segurar os eventos seguintes do mesmo pedido (ordem estrita, com atraso de até ~15h) ou aceitar que eles passem à frente? | Ordem ([09:12] Diego) e retry ([09:17] Diego) foram decididos separadamente, e a reunião não tratou dessa interação. A inversão é uma inferência registrada no [ADR-008](adrs/ADR-008-ordering-single-worker-por-order-id.md). | Levantada na revisão dos documentos, não na reunião |
 
 ## Impacto e riscos
 
@@ -130,6 +131,7 @@ Contratos (endpoints, payload, headers), modelo de dados e matriz de erros estã
 | O cliente fica fora do ar por mais tempo que a janela de retry (~15h) | Eventos vão para a DLQ e não são entregues automaticamente | Aceito; resta o replay manual pela DLQ | [09:17] Marcos, [09:18] Diego |
 | O cliente vaza a própria secret | Envios forjados para aquele endpoint | Uma secret por endpoint limita o dano a um cliente, e a rotação tem 24h de convivência | [09:21] Sofia, [09:22] Diego |
 | Rajadas de envio para um mesmo cliente | Sobrecarga no endpoint do cliente | Não implementada; observar (ver Q1) | [09:38] Diego, [09:39] Larissa |
+| Com retry, o cliente recebe eventos do mesmo pedido fora de ordem | O cliente vê um status anterior chegar depois do seguinte | Mitigação não decidida (ver Q5); o payload leva `from_status`, `to_status` e o momento da mudança, o que permite reconciliar | [ADR-008](adrs/ADR-008-ordering-single-worker-por-order-id.md) |
 | A vazão fica limitada a um único worker | Atraso na entrega se o volume crescer | Mitigação não discutida; a estratégia de escala está em aberto (ver Q2) | [09:13] Diego |
 
 ## Decisões relacionadas
