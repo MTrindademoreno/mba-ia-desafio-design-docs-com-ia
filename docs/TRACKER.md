@@ -194,7 +194,7 @@ Este tracker liga cada item identificável dos documentos ([PRD](PRD.md), [RFC](
 | FDD-FLUXO-12 | docs/FDD.md | Fluxo | Secret gerada pela plataforma e devolvida (geração via crypto: proposta derivada) | TRANSCRICAO | [09:31] Marcos |
 | FDD-FLUXO-13 | docs/FDD.md | Fluxo | Desligamento do worker no padrão do servidor | CODIGO | `src/server.ts` |
 | FDD-CONTRATO-01 | docs/FDD.md | Contrato | POST /webhooks: cadastrar | TRANSCRICAO | [09:31] Marcos |
-| FDD-CONTRATO-02 | docs/FDD.md | Contrato | GET /webhooks?customerId: listar | TRANSCRICAO | [09:33] Bruno; [09:32] Larissa |
+| FDD-CONTRATO-02 | docs/FDD.md | Contrato | GET /customers/:customerId/webhooks: listar, com customerId no path | TRANSCRICAO | [09:33] Bruno; [09:32] Larissa |
 | FDD-CONTRATO-03 | docs/FDD.md | Contrato | GET /webhooks/:id (proposta derivada do CRUD) | TRANSCRICAO | [09:33] Bruno |
 | FDD-CONTRATO-04 | docs/FDD.md | Contrato | PATCH /webhooks/:id | TRANSCRICAO | [09:33] Bruno |
 | FDD-CONTRATO-05 | docs/FDD.md | Contrato | DELETE /webhooks/:id | TRANSCRICAO | [09:33] Bruno |
@@ -206,7 +206,7 @@ Este tracker liga cada item identificável dos documentos ([PRD](PRD.md), [RFC](
 | FDD-CONTRATO-11 | docs/FDD.md | Restrição | Convenções: prefixo /api/v1, corpo de erro, paginação | CODIGO | `src/app.ts`; `src/middlewares/error.middleware.ts`; `src/shared/http/response.ts` |
 | FDD-CONTRATO-12 | docs/FDD.md | Restrição | customerId não vem do JWT | TRANSCRICAO | [09:32] Bruno; [09:32] Larissa |
 | FDD-ERRO-01 | docs/FDD.md | Erro | WEBHOOK_NOT_FOUND (404) | TRANSCRICAO | [09:28] Bruno |
-| FDD-ERRO-02 | docs/FDD.md | Erro | WEBHOOK_INVALID_URL (400) | TRANSCRICAO | [09:28] Bruno; [09:23] Sofia |
+| FDD-ERRO-02 | docs/FDD.md | Erro | URL sem HTTPS validada no Zod → VALIDATION_ERROR; WEBHOOK_INVALID_URL não é usado | TRANSCRICAO | [09:23] Sofia; [09:28] Bruno |
 | FDD-ERRO-03 | docs/FDD.md | Erro | WEBHOOK_CUSTOMER_NOT_FOUND (proposta derivada do prefixo) | TRANSCRICAO | [09:29] Larissa |
 | FDD-ERRO-04 | docs/FDD.md | Erro | WEBHOOK_SECRET_ROTATION_IN_PROGRESS (proposta derivada) | TRANSCRICAO | [09:21] Sofia |
 | FDD-ERRO-05 | docs/FDD.md | Erro | WEBHOOK_DEAD_LETTER_NOT_FOUND (proposta derivada do prefixo) | TRANSCRICAO | [09:29] Larissa |
@@ -253,7 +253,7 @@ Este tracker liga cada item identificável dos documentos ([PRD](PRD.md), [RFC](
 | FDD-INTEG-08 | docs/FDD.md | Integração | `authenticate` e `requireRole('ADMIN')` | CODIGO | `src/middlewares/auth.middleware.ts` |
 | FDD-INTEG-09 | docs/FDD.md | Integração | `validate` com os schemas novos | CODIGO | `src/middlewares/validate.middleware.ts` |
 | FDD-INTEG-10 | docs/FDD.md | Integração | `buildControllers` instancia o módulo | CODIGO | `src/app.ts` |
-| FDD-INTEG-11 | docs/FDD.md | Integração | Rotas `/webhooks` e `/admin/webhooks` | CODIGO | `src/routes/index.ts` |
+| FDD-INTEG-11 | docs/FDD.md | Integração | Rotas `/webhooks`, `/customers/:customerId/webhooks` e `/admin/webhooks` | CODIGO | `src/routes/index.ts` |
 | FDD-INTEG-12 | docs/FDD.md | Integração | `paginated()` nas listas | CODIGO | `src/shared/http/response.ts` |
 | FDD-INTEG-13 | docs/FDD.md | Integração | Novos redactPaths | CODIGO | `src/shared/logger/index.ts` |
 | FDD-INTEG-14 | docs/FDD.md | Integração | Variáveis de ambiente opcionais | CODIGO | `src/config/env.ts` |
@@ -263,16 +263,16 @@ Este tracker liga cada item identificável dos documentos ([PRD](PRD.md), [RFC](
 | FDD-INTEG-18 | docs/FDD.md | Integração | Schemas de orders como referência | CODIGO | `src/modules/orders/order.schemas.ts` |
 | FDD-INTEG-19 | docs/FDD.md | Integração | Scripts do worker | CODIGO | `package.json` |
 | FDD-INTEG-20 | docs/FDD.md | Integração | Testes existentes como referência | CODIGO | `tests/orders.test.ts`; `tests/setup.ts` |
-| FDD-NOVO-01 | docs/FDD.md | Integração | `webhook.routes.ts` espelha as rotas de orders | CODIGO | `src/modules/orders/order.routes.ts` |
-| FDD-NOVO-02 | docs/FDD.md | Integração | `webhook.controller.ts` espelha o controller de orders | CODIGO | `src/modules/orders/order.controller.ts` |
-| FDD-NOVO-03 | docs/FDD.md | Integração | `webhook.service.ts` espelha o service de orders | CODIGO | `src/modules/orders/order.service.ts` |
-| FDD-NOVO-04 | docs/FDD.md | Integração | `webhook.repository.ts` espelha o repository de orders | CODIGO | `src/modules/orders/order.repository.ts` |
-| FDD-NOVO-05 | docs/FDD.md | Integração | `webhook.schemas.ts` espelha os schemas de orders | CODIGO | `src/modules/orders/order.schemas.ts` |
-| FDD-NOVO-06 | docs/FDD.md | Integração | `webhook.publisher.ts` com a função pura | TRANSCRICAO | [09:41] Bruno; [09:41] Diego |
-| FDD-NOVO-07 | docs/FDD.md | Integração | `webhook.worker.ts` com o processamento | TRANSCRICAO | [09:28] Bruno |
-| FDD-NOVO-08 | docs/FDD.md | Integração | `webhook.signature.ts` com o HMAC (proposta derivada) | TRANSCRICAO | [09:20] Sofia |
-| FDD-NOVO-09 | docs/FDD.md | Integração | `src/worker.ts` como ponto de entrada | TRANSCRICAO | [09:11] Larissa; [09:28] Bruno |
-| FDD-NOVO-10 | docs/FDD.md | Integração | `tests/webhooks.test.ts` (proposta derivada) | CODIGO | `tests/orders.test.ts` |
+| FDD-NOVO-01 | docs/FDD.md | Integração | Rotas do novo módulo espelham as rotas de orders | CODIGO | `src/modules/orders/order.routes.ts` |
+| FDD-NOVO-02 | docs/FDD.md | Integração | Controller do novo módulo espelha o controller de orders | CODIGO | `src/modules/orders/order.controller.ts` |
+| FDD-NOVO-03 | docs/FDD.md | Integração | Service do novo módulo espelha o service de orders | CODIGO | `src/modules/orders/order.service.ts` |
+| FDD-NOVO-04 | docs/FDD.md | Integração | Repository do novo módulo espelha o repository de orders | CODIGO | `src/modules/orders/order.repository.ts` |
+| FDD-NOVO-05 | docs/FDD.md | Integração | Schemas do novo módulo espelham os schemas de orders | CODIGO | `src/modules/orders/order.schemas.ts` |
+| FDD-NOVO-06 | docs/FDD.md | Integração | Publicador de eventos com a função pura | TRANSCRICAO | [09:41] Bruno; [09:41] Diego |
+| FDD-NOVO-07 | docs/FDD.md | Integração | Processador do worker em arquivo próprio no módulo | TRANSCRICAO | [09:28] Bruno |
+| FDD-NOVO-08 | docs/FDD.md | Integração | Componente de assinatura HMAC (proposta derivada) | TRANSCRICAO | [09:20] Sofia |
+| FDD-NOVO-09 | docs/FDD.md | Integração | Ponto de entrada novo para o worker | TRANSCRICAO | [09:11] Larissa; [09:28] Bruno |
+| FDD-NOVO-10 | docs/FDD.md | Integração | Testes do novo módulo (proposta derivada) | CODIGO | `tests/orders.test.ts` |
 | FDD-DEP-01 | docs/FDD.md | Dependência | Nenhuma dependência npm nova | CODIGO | `package.json` |
 | FDD-DEP-02 | docs/FDD.md | Dependência | Migration aditiva | CODIGO | `prisma/migrations/` |
 | FDD-DEP-03 | docs/FDD.md | Dependência | Variáveis WEBHOOK_* com padrões dos ADRs (proposta derivada) | CODIGO | `src/config/env.ts` |
@@ -289,7 +289,7 @@ Este tracker liga cada item identificável dos documentos ([PRD](PRD.md), [RFC](
 | FDD-CA-08 | docs/FDD.md | Critério de Aceite | Esgotadas as tentativas → FAILED + DLQ | TRANSCRICAO | [09:17] Diego; [09:18] Diego |
 | FDD-CA-09 | docs/FDD.md | Critério de Aceite | Replay: OPERATOR 403; ADMIN 202, mesmo id, log | TRANSCRICAO | [09:36] Sofia |
 | FDD-CA-10 | docs/FDD.md | Critério de Aceite | Segundo replay → 409 (proposta derivada) | TRANSCRICAO | [09:18] Diego |
-| FDD-CA-11 | docs/FDD.md | Critério de Aceite | URL http → WEBHOOK_INVALID_URL | TRANSCRICAO | [09:23] Sofia |
+| FDD-CA-11 | docs/FDD.md | Critério de Aceite | URL http → VALIDATION_ERROR no campo url | TRANSCRICAO | [09:23] Sofia |
 | FDD-CA-12 | docs/FDD.md | Critério de Aceite | Secret só na criação e na rotação, nunca em log (proposta derivada) | TRANSCRICAO | [09:31] Marcos |
 | FDD-CA-13 | docs/FDD.md | Critério de Aceite | Duas assinaturas por 24 h após a rotação | TRANSCRICAO | [09:21] Sofia |
 | FDD-CA-14 | docs/FDD.md | Critério de Aceite | Ordem de criação no caminho sem falhas | TRANSCRICAO | [09:12] Diego |
@@ -387,4 +387,4 @@ Estes itens aparecem nos documentos como estimativa ou proposta do autor e não 
 | Linhas com Fonte = TRANSCRICAO | 267 (81,4%) |
 | Linhas com Fonte = CODIGO | 61 |
 
-Todas as âncoras `[hh:mm] Nome` existem como fala na transcrição, e todos os caminhos de código existem no repositório. A conferência foi feita com o script `.claude/skills/gerar-tracker/scripts/verificar_tracker.py`.
+Todas as âncoras `[hh:mm] Nome` existem como fala na transcrição, e todos os caminhos de código existem no repositório. A conferência foi feita com um script de verificação próprio, usado localmente e não versionado neste repositório.

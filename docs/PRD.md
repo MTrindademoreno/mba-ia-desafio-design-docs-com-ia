@@ -86,7 +86,7 @@ As métricas técnicas que alimentam a PRD-OBJ-01 e a PRD-OBJ-03 estão no [FDD 
 | PRD-FR-01 | O cliente cadastra um webhook informando a URL de destino e os status que quer receber. A plataforma gera a secret e a devolve na criação | [09:31] Marcos | [FDD §7.1](FDD.md#71-post-apiv1webhooks-cadastrar-webhook) |
 | PRD-FR-02 | O cliente edita um webhook cadastrado | [09:33] Bruno | [FDD §7.4](FDD.md#74-patch-apiv1webhooksid-editar-webhook) |
 | PRD-FR-03 | O cliente remove um webhook cadastrado | [09:33] Bruno | [FDD §7.5](FDD.md#75-delete-apiv1webhooksid-remover-webhook) |
-| PRD-FR-04 | O cliente lista os webhooks cadastrados para ele | [09:33] Bruno | [FDD §7.2](FDD.md#72-get-apiv1webhookscustomeriduuid-listar-webhooks-de-um-cliente) |
+| PRD-FR-04 | O cliente lista os webhooks cadastrados para ele | [09:33] Bruno | [FDD §7.2](FDD.md#72-get-apiv1customerscustomeridwebhooks-listar-webhooks-de-um-cliente) |
 | PRD-FR-05 | Cada webhook recebe apenas as mudanças para os status escolhidos no cadastro | [09:33] Marcos, [09:34] Bruno | [FDD §6.1](FDD.md#61-criação-do-evento-na-outbox) |
 | PRD-FR-06 | Toda mudança de status de um pedido gera uma notificação para os webhooks interessados do cliente dono do pedido | [09:00] Marcos, [09:06] Diego | [FDD §6.1](FDD.md#61-criação-do-evento-na-outbox), [FDD §6.2](FDD.md#62-processamento-pelo-worker) |
 | PRD-FR-07 | A notificação traz o essencial da mudança: pedido, número, status anterior e novo, cliente, valor total e momento. Os itens do pedido não vão; o cliente consulta o pedido se quiser detalhes | [09:43] Diego, [09:44] Bruno | [FDD §7.10](FDD.md#710-contrato-de-saída-o-request-que-o-cliente-recebe) |

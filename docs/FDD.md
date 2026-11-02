@@ -72,7 +72,7 @@ flowchart LR
         DL[(webhook_dead_letter)]
         DV[(webhook_deliveries)]
     end
-    subgraph WK ["Processo worker (src/worker.ts)"]
+    subgraph WK ["Processo worker (ponto de entrada novo)"]
         LOOP["loop de polling 2s"] --> SEND["envio HTTP assinado"]
     end
     PUB --> OB
@@ -288,7 +288,7 @@ Convenções do projeto, válidas para todos os endpoints:
 - **Corpo de erro** `{ "error": { "code", "message", "details?" } }` (`src/middlewares/error.middleware.ts` L16–22).
 - **Listas paginadas** no formato `{ data, pagination: { page, pageSize, total, totalPages } }` (`src/shared/http/response.ts`).
 - **Campos da API em camelCase**, como nas respostas atuais.
-- **`customerId`** vem no body ou na query, nunca do JWT ([09:32] Larissa).
+- **`customerId`** vem no body ou no path, nunca do JWT ([09:32] Larissa).
 
 Recurso `Webhook` nas respostas **(proposta)**:
 
@@ -318,7 +318,7 @@ Recurso `Webhook` nas respostas **(proposta)**:
 | --- | --- | --- |
 | `customerId` | `uuid` | `VALIDATION_ERROR` |
 | `url` | `z.string().url().max(2048)` | `VALIDATION_ERROR` |
-| `url` | protocolo `https:`, checado no service | `WEBHOOK_INVALID_URL` ([09:23] Sofia) |
+| `url` | protocolo `https:`, com `.refine()` no schema Zod | `VALIDATION_ERROR` com `details[].path = "url"` ([09:23] Sofia) |
 | `events` | `z.array(z.nativeEnum(OrderStatus)).min(1)`, sem duplicatas | `VALIDATION_ERROR` |
 | `customerId` | o cliente tem de existir | `WEBHOOK_CUSTOMER_NOT_FOUND` |
 
@@ -351,7 +351,7 @@ Recurso `Webhook` nas respostas **(proposta)**:
 **Response `400` (URL sem HTTPS)**
 
 ```json
-{ "error": { "code": "WEBHOOK_INVALID_URL", "message": "Webhook URL must use https", "details": { "url": "http://hooks.atlas.example.com/oms" } } }
+{ "error": { "code": "VALIDATION_ERROR", "message": "Validation failed", "details": [ { "path": "url", "message": "Webhook URL must use https" } ] } }
 ```
 
 **Status codes:**
@@ -359,17 +359,16 @@ Recurso `Webhook` nas respostas **(proposta)**:
 | Status | Quando |
 | --- | --- |
 | `201` | Criado |
-| `400` | `VALIDATION_ERROR` ou `WEBHOOK_INVALID_URL` |
+| `400` | `VALIDATION_ERROR`, inclusive para URL sem HTTPS |
 | `401` | Sem token ou token inválido |
 | `404` | `WEBHOOK_CUSTOMER_NOT_FOUND` |
 
-### 7.2 `GET /api/v1/webhooks?customerId=<uuid>`: listar webhooks de um cliente
+### 7.2 `GET /api/v1/customers/:customerId/webhooks`: listar webhooks de um cliente
 
 - **Auth:** qualquer role autenticada.
-- **Semântica:** lista paginada, ordenada por `createdAt desc`. As queries `page` e `pageSize` seguem `listOrdersQuerySchema` (`src/modules/orders/order.schemas.ts`), com padrão 1/20 e máximo de 100.
-- **Desvio proposto:** `customerId` vai na **query** **(proposta)**. A reunião disse "body ou path" ([09:32] Larissa), mas query é o padrão de filtro que `GET /orders` já usa.
+- **Semântica:** lista paginada, ordenada por `createdAt desc`. O `customerId` vai no path, como decidido na reunião ([09:32] Larissa). A rota aninhada em `customers` é **(proposta)**. As queries `page` e `pageSize` seguem `listOrdersQuerySchema` (`src/modules/orders/order.schemas.ts`), com padrão 1/20 e máximo de 100.
 
-**Request:** `GET /api/v1/webhooks?customerId=3f2b8c1e-5d4a-4e6b-9c7d-2a1b0e9f8d76&page=1&pageSize=20`
+**Request:** `GET /api/v1/customers/3f2b8c1e-5d4a-4e6b-9c7d-2a1b0e9f8d76/webhooks?page=1&pageSize=20`
 
 **Response `200`**
 
@@ -396,8 +395,9 @@ Recurso `Webhook` nas respostas **(proposta)**:
 | Status | Quando |
 | --- | --- |
 | `200` | Lista retornada |
-| `400` | `VALIDATION_ERROR`, inclusive quando falta o `customerId` |
+| `400` | `VALIDATION_ERROR`, inclusive para `customerId` que não é uuid |
 | `401` | Sem token ou token inválido |
+| `404` | `WEBHOOK_CUSTOMER_NOT_FOUND` |
 
 ### 7.3 `GET /api/v1/webhooks/:id`: detalhar webhook **(proposta)**
 
@@ -444,7 +444,7 @@ Recurso `Webhook` nas respostas **(proposta)**:
 | Status | Quando |
 | --- | --- |
 | `200` | Atualizado |
-| `400` | `VALIDATION_ERROR` ou `WEBHOOK_INVALID_URL` |
+| `400` | `VALIDATION_ERROR`, inclusive para URL sem HTTPS |
 | `401` | Sem token ou token inválido |
 | `404` | `WEBHOOK_NOT_FOUND` |
 
@@ -662,7 +662,6 @@ As classes novas seguem `src/shared/errors/http-errors.ts`: estendem `ConflictEr
 | Código | HTTP | Quando ocorre | Classe | Origem |
 | --- | --- | --- | --- | --- |
 | `WEBHOOK_NOT_FOUND` | 404 | `:id` de webhook inexistente | `WebhookNotFoundError` (nova, estende `AppError`) | [09:28] Bruno |
-| `WEBHOOK_INVALID_URL` | 400 | URL sem `https:` | `WebhookInvalidUrlError` (nova, estende `BadRequestError`) | [09:28] Bruno, [09:23] Sofia |
 | `WEBHOOK_CUSTOMER_NOT_FOUND` | 404 | `customerId` inexistente no cadastro | `WebhookCustomerNotFoundError` (nova) | (proposta) |
 | `WEBHOOK_SECRET_ROTATION_IN_PROGRESS` | 409 | Rotação pedida com a secret anterior ainda válida | `WebhookSecretRotationInProgressError` (nova, estende `ConflictError`) | (proposta, derivada do [ADR-004]) |
 | `WEBHOOK_DEAD_LETTER_NOT_FOUND` | 404 | `:id` de dead letter inexistente | `WebhookDeadLetterNotFoundError` (nova) | (proposta) |
@@ -672,6 +671,8 @@ As classes novas seguem `src/shared/errors/http-errors.ts`: estendem `ConflictEr
 | `UNAUTHORIZED` | 401 | Sem token ou token inválido | `UnauthorizedError` (existente) | `src/middlewares/auth.middleware.ts` |
 | `FORBIDDEN` | 403 | Role diferente de ADMIN em `/admin/*` | `ForbiddenError` (existente, via `requireRole`) | `src/middlewares/auth.middleware.ts` |
 | `INTERNAL_SERVER_ERROR` | 500 | Falha ao gravar na outbox dentro de `changeStatus`, que desfaz a mudança de status | genérico do middleware | `src/middlewares/error.middleware.ts`, [ADR-007] |
+
+`WEBHOOK_INVALID_URL` também foi citado como exemplo ([09:28] Bruno). Mas a exigência de HTTPS é "só uma validação no schema Zod" ([09:23] Sofia), e o middleware `validate` converte qualquer erro do Zod em `VALIDATION_ERROR` (`src/middlewares/validate.middleware.ts`). Por isso a URL sem HTTPS retorna `VALIDATION_ERROR` com `details[].path = "url"`, e o código `WEBHOOK_INVALID_URL` não é usado.
 
 `WEBHOOK_SECRET_REQUIRED` foi citado como exemplo na reunião ([09:28] Bruno). Como a secret é gerada pela plataforma ([09:31] Marcos), o cliente nunca a envia, e o código não se aplica à API. Ele é reaproveitado como motivo interno em §8.2.
 
@@ -788,33 +789,35 @@ OpenTelemetry fica como evolução, por ser dependência nova (Q5).
 | `src/shared/errors/app-error.ts` | **Reaproveitado sem mudança.** É a base das novas classes | — |
 | `src/middlewares/error.middleware.ts` | **Sem mudança.** Já serializa qualquer `AppError` como `{ error: { code, message, details } }` ([09:29] Bruno) | L15–24 |
 | `src/middlewares/auth.middleware.ts` | **Sem mudança.** `authenticate` em todas as rotas e `requireRole('ADMIN')` nas rotas `/admin/webhooks/*` ([09:36] Larissa) | `requireRole`, L49–61 |
-| `src/middlewares/validate.middleware.ts` | **Sem mudança.** `validate({ body, query, params })` com os schemas de `webhook.schemas.ts` | — |
+| `src/middlewares/validate.middleware.ts` | **Sem mudança.** `validate({ body, query, params })` com os schemas do novo módulo de webhooks | — |
 | `src/app.ts` | **Muda.** `buildControllers` instancia `WebhookRepository`, `WebhookService` e `WebhookController` e os acrescenta ao objeto retornado | L26–53 |
-| `src/routes/index.ts` | **Muda.** O tipo `Controllers` ganha `webhooks`, e `buildApiRouter` monta `router.use('/webhooks', ...)` e `router.use('/admin/webhooks', ...)` | L13–19 e L21–31 |
+| `src/routes/index.ts` | **Muda.** O tipo `Controllers` ganha `webhooks`, e `buildApiRouter` monta `router.use('/webhooks', ...)`, `router.use('/customers/:customerId/webhooks', ...)` (com `mergeParams`) e `router.use('/admin/webhooks', ...)` | L13–19 e L21–31 |
 | `src/shared/http/response.ts` | **Reaproveitado sem mudança.** `paginated()` nas listas de webhooks, entregas e DLQ | — |
 | `src/shared/logger/index.ts` | **Muda pouco (proposta).** Novos `redactPaths` para secret e assinatura | `redactPaths`, L4–11 |
 | `src/config/env.ts` | **Muda (proposta).** Novas variáveis opcionais com padrão (§12) | `envSchema`, L3–10 |
 | `src/config/database.ts` | **Sem mudança.** O worker importa `prisma`; como é outro processo, o módulo cria uma instância própria ([09:30] Bruno) | L4–10 |
-| `src/server.ts` | **Sem mudança; serve de molde** para `src/worker.ts`: bootstrap, `SIGINT`/`SIGTERM`, `prisma.$disconnect()` e `bootstrap_failed` ([09:11] Larissa) | L6–27 |
+| `src/server.ts` | **Sem mudança; serve de molde** para o ponto de entrada do worker: bootstrap, `SIGINT`/`SIGTERM`, `prisma.$disconnect()` e `bootstrap_failed` ([09:11] Larissa) | L6–27 |
 | `src/modules/orders/order.status.ts` | **Sem mudança.** Só transições válidas chegam à gravação do evento, então os status emitidos são os desta máquina de estados | `transitions`, L3–10 |
-| `src/modules/orders/order.schemas.ts` | **Reaproveitado como referência.** O padrão de `idParamSchema` e de `listOrdersQuerySchema` (paginação, filtro `customerId`) é copiado em `webhook.schemas.ts` | L4, L23–30 |
-| `package.json` | **Muda.** Scripts `worker` (`tsx --env-file=.env src/worker.ts`), `worker:dev` (com `watch`) e `start:worker` (`node --env-file=.env dist/worker.js`), espelhando `dev` e `start`. Nenhuma dependência nova: `fetch`, `crypto` e `uuid` já estão disponíveis | `scripts` |
+| `src/modules/orders/order.schemas.ts` | **Reaproveitado como referência.** O padrão de `idParamSchema` e de `listOrdersQuerySchema` (paginação, filtro `customerId`) é copiado nos schemas do novo módulo | L4, L23–30 |
+| `package.json` | **Muda.** Scripts `worker`, `worker:dev` (com `watch`) e `start:worker`, que sobem o ponto de entrada do worker com `tsx` e `node --env-file=.env`, espelhando `dev` e `start`. Nenhuma dependência nova: `fetch`, `crypto` e `uuid` já estão disponíveis | `scripts` |
 | `tests/orders.test.ts`, `tests/setup.ts` | **Referência** para os testes novos (vitest + supertest), mais um teste em `orders` para a gravação na outbox | — |
 
-### Arquivos novos
+### Componentes novos (a criar)
 
-| Arquivo | Responsabilidade | Espelha |
+Os componentes abaixo ainda não existem no repositório. Eles são descritos pela responsabilidade e pelo arquivo existente que cada um espelha. Os nomes e caminhos finais ficam para a implementação, seguindo a convenção de `src/modules/orders/`.
+
+| Componente | Responsabilidade | Espelha |
 | --- | --- | --- |
-| `src/modules/webhooks/webhook.routes.ts` | Rotas `/webhooks` e `/admin/webhooks` | `src/modules/orders/order.routes.ts` |
-| `src/modules/webhooks/webhook.controller.ts` | Handlers com `try/catch → next(err)` | `src/modules/orders/order.controller.ts` |
-| `src/modules/webhooks/webhook.service.ts` | CRUD, rotação e replay | `src/modules/orders/order.service.ts` |
-| `src/modules/webhooks/webhook.repository.ts` | Acesso ao Prisma | `src/modules/orders/order.repository.ts` |
-| `src/modules/webhooks/webhook.schemas.ts` | Schemas Zod | `src/modules/orders/order.schemas.ts` |
-| `src/modules/webhooks/webhook.publisher.ts` (proposta) | `publishWebhookEvent(tx, ...)`, função pura ([09:41] Diego) | — |
-| `src/modules/webhooks/webhook.worker.ts` | Loop, reserva, envio, retry e DLQ (nome citado em [09:28] Bruno) | — |
-| `src/modules/webhooks/webhook.signature.ts` (proposta) | Geração de secret e cálculo do HMAC | — |
-| `src/worker.ts` | Ponto de entrada do worker ([09:11] Larissa, [09:28] Bruno) | `src/server.ts` |
-| `tests/webhooks.test.ts` (proposta) | Testes de API e de worker | `tests/orders.test.ts` |
+| Rotas do módulo de webhooks | Rotas `/webhooks`, `/customers/:customerId/webhooks` e `/admin/webhooks` | `src/modules/orders/order.routes.ts` |
+| Controller do módulo de webhooks | Handlers com `try/catch → next(err)` | `src/modules/orders/order.controller.ts` |
+| Service do módulo de webhooks | CRUD, rotação e replay | `src/modules/orders/order.service.ts` |
+| Repository do módulo de webhooks | Acesso ao Prisma | `src/modules/orders/order.repository.ts` |
+| Schemas do módulo de webhooks | Schemas Zod | `src/modules/orders/order.schemas.ts` |
+| Publicador de eventos (proposta) | `publishWebhookEvent(tx, ...)`, função pura ([09:41] Diego) | — |
+| Processador do worker | Loop, reserva, envio, retry e DLQ (arquivo próprio no módulo, citado em [09:28] Bruno) | — |
+| Assinatura (proposta) | Geração de secret e cálculo do HMAC | — |
+| Ponto de entrada do worker | Sobe o processo do worker ([09:11] Larissa, [09:28] Bruno) | `src/server.ts` |
+| Testes do módulo de webhooks (proposta) | Testes de API e de worker | `tests/orders.test.ts` |
 
 ## 12. Dependências e compatibilidade
 
@@ -864,7 +867,7 @@ OpenTelemetry fica como evolução, por ser dependência nova (Q5).
 - [ ] **CA-08:** depois da tentativa inicial mais 5 retentativas com falha, nos intervalos 1m/5m/30m/2h/12h, o evento fica `FAILED` e aparece em `webhook_dead_letter` com o motivo ([ADR-003]).
 - [ ] **CA-09:** o replay com role OPERATOR retorna 403; com ADMIN, retorna 202, devolve o evento a `PENDING` com o **mesmo** `id` e registra o log `webhook_dead_letter_replayed` com o `userId` ([ADR-006]).
 - [ ] **CA-10:** um segundo replay da mesma dead letter retorna 409 `WEBHOOK_DEAD_LETTER_ALREADY_REPLAYED`.
-- [ ] **CA-11:** `POST /webhooks` com URL `http://` retorna 400 `WEBHOOK_INVALID_URL` ([09:23] Sofia).
+- [ ] **CA-11:** `POST /webhooks` com URL `http://` retorna 400 `VALIDATION_ERROR`, com `details[].path = "url"` ([09:23] Sofia).
 - [ ] **CA-12:** a secret aparece apenas nas respostas de criação e de rotação, e nunca nos logs.
 - [ ] **CA-13:** depois da rotação, envios nas 24h seguintes trazem duas assinaturas em `X-Signature`, e envios depois desse prazo trazem só a nova ([ADR-004]).
 - [ ] **CA-14:** sem falhas, eventos sucessivos do mesmo pedido para o mesmo webhook são enviados na ordem de criação ([09:12] Diego, [ADR-008]). Com um evento em backoff, o comportamento segue a decisão da Q11; enquanto ela não sair, o evento seguinte é enviado sem esperar.
